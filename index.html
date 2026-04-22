@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CompySight | 예방점검체계 적용 진단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07101f;
+    --surface: #0d1b2e;
+    --surface2: #112240;
+    --border: #1a3050;
+    --border-active: #2563eb;
+    --text: #e2eaf4;
+    --text-muted: #4e6a85;
+    --text-sub: #8ba3bc;
+    --accent: #2563eb;
+    --accent-light: #60a5fa;
+    --grade-a: #ef4444;
+    --grade-b: #f59e0b;
+    --grade-c: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* decorative blobs */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 700px; height: 700px;
+    top: -200px; right: -200px;
+    background: radial-gradient(circle, rgba(37,99,235,0.07) 0%, transparent 65%);
+  }
+  body::after {
+    width: 500px; height: 500px;
+    bottom: -150px; left: -150px;
+    background: radial-gradient(circle, rgba(96,165,250,0.05) 0%, transparent 65%);
+  }
+
+  .card {
+    position: relative; z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 44px 48px;
+    width: 100%; max-width: 560px;
+    box-shadow: 0 0 80px rgba(37,99,235,0.07), 0 32px 64px rgba(0,0,0,0.5);
+    transition: opacity .3s ease;
+  }
+  @media (max-width: 600px) {
+    .card { padding: 32px 24px; }
+  }
+
+  /* Logo */
+  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { display: block; }
+  .logo-text { line-height: 1.2; }
+  .logo-name { font-size: 16px; font-weight: 900; color: var(--text); letter-spacing: .02em; }
+  .logo-by { font-size: 10px; color: var(--text-muted); letter-spacing: .1em; }
+
+  /* Progress */
+  .progress-wrap { margin-bottom: 28px; }
+  .progress-meta { display: flex; justify-content: space-between; margin-bottom: 7px; }
+  .progress-label { font-size: 11px; color: var(--text-muted); }
+  .progress-pct { font-size: 11px; color: var(--accent-light); font-weight: 700; }
+  .progress-bar { background: var(--surface2); border-radius: 99px; height: 4px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+    transition: width .45s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    background: rgba(37,99,235,0.15);
+    color: var(--accent-light);
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    padding: 4px 13px; border-radius: 20px;
+    margin-bottom: 16px; border: 1px solid rgba(37,99,235,0.3);
+  }
+
+  h2 { font-size: 22px; font-weight: 900; line-height: 1.45; color: var(--text); margin-bottom: 12px; }
+  h3 { font-size: 17px; font-weight: 700; line-height: 1.65; color: var(--text); margin-bottom: 22px; }
+  p.desc { font-size: 13px; color: var(--text-muted); line-height: 1.85; margin-bottom: 28px; }
+  p.desc strong { color: var(--text-sub); }
+
+  /* Step counter */
+  .step-counter { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: .08em; margin-bottom: 10px; }
+
+  /* Options */
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .option {
+    background: #0b1929;
+    border: 1.5px solid var(--border);
+    border-radius: 13px;
+    padding: 14px 18px;
+    color: var(--text-sub);
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 13px;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .option:hover { border-color: #2563eb88; background: rgba(37,99,235,0.07); }
+  .option.selected {
+    border-color: var(--accent);
+    background: rgba(37,99,235,0.13);
+    color: #93c5fd;
+    font-weight: 700;
+  }
+  .radio-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .15s;
+  }
+  .option.selected .radio-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .radio-inner { width: 8px; height: 8px; background: #fff; border-radius: 50%; display: none; }
+  .option.selected .radio-inner { display: block; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; }
+  .btn {
+    border: none; border-radius: 12px;
+    padding: 14px 28px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .18s;
+    font-family: inherit; letter-spacing: .02em;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #fff; flex: 2;
+    box-shadow: 0 4px 20px rgba(37,99,235,0.25);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,99,235,0.35); }
+  .btn-primary:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-secondary { background: var(--surface2); color: var(--text-sub); flex: 1; }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-full { width: 100%; }
+
+  /* Info textarea */
+  .info-notice {
+    background: #0b1929; border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .info-notice .notice-title { font-weight: 700; color: var(--text-sub); margin-bottom: 8px; font-size: 12px; }
+  .notice-row { display: flex; justify-content: space-between; margin-top: 4px; }
+  .notice-row span:last-child { color: var(--text-sub); }
+  .notice-row .blue { color: var(--accent-light); }
+
+  textarea {
+    width: 100%; background: #0b1929;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; color: var(--text); font-size: 14px;
+    outline: none; resize: none; font-family: inherit;
+    line-height: 1.7; margin-bottom: 20px;
+    transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text-muted); }
+
+  /* Result */
+  .result-icon { font-size: 52px; text-align: center; margin-bottom: 8px; }
+  .result-title { text-align: center; font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+  .result-sub { text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+
+  .verdict-box {
+    border-radius: 16px; padding: 22px 24px; margin-bottom: 24px;
+    background: #0b1929;
+  }
+  .verdict-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .verdict-badge {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 16px; color: #fff; flex-shrink: 0;
+  }
+  .verdict-label { font-weight: 800; font-size: 17px; }
+  .verdict-desc { font-size: 13px; color: var(--text-sub); line-height: 1.75; }
+  .verdict-tag { font-size: 10px; color: var(--text-muted); font-weight: 700; letter-spacing: .08em; margin-bottom: 6px; }
+
+  .resources { margin-bottom: 28px; }
+  .resources-title { font-size: 12px; color: var(--text-muted); font-weight: 700; letter-spacing: .08em; margin-bottom: 10px; }
+  .resource-link {
+    display: flex; align-items: center; gap: 12px;
+    background: #0b1929; border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; margin-bottom: 8px;
+    text-decoration: none; transition: border-color .15s;
+  }
+  .resource-link:hover { border-color: var(--accent); }
+  .resource-icon { font-size: 20px; flex-shrink: 0; }
+  .resource-info { flex: 1; }
+  .resource-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .resource-url { font-size: 11px; color: var(--text-muted); }
+  .resource-arrow { color: var(--border); font-size: 13px; }
+
+  .admin-link {
+    display: block; text-align: center; margin-top: 16px;
+    background: none; border: none; color: var(--text-muted);
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+
+  /* Sending overlay */
+  .sending {
+    text-align: center; padding: 20px 0;
+    font-size: 14px; color: var(--text-sub);
+  }
+  .spinner {
+    display: inline-block; width: 28px; height: 28px;
+    border: 3px solid var(--surface2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+  .fade-in { animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <!-- LOGO (shared) -->
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 2L3 8v12h5v-5h6v5h5V8L11 2z" fill="white" fill-opacity=".92"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <div class="logo-name">ComplySight</div>
+      <div class="logo-by">by knowwheresoft</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS (hidden on intro/result) -->
+  <div class="progress-wrap hidden" id="progressWrap">
+    <div class="progress-meta">
+      <span class="progress-label">진행도</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: INTRO ────────────────────────────── -->
+  <div id="screen-intro" class="fade-in">
+    <div class="badge">정보시스템 예방점검체계 자동화</div>
+    <h2>우리 기관도 예방점검체계<br>적용 대상일까요?</h2>
+    <p class="desc">5개의 간단한 질문으로 적용 여부를 확인하고,<br>맞춤 솔루션 정보를 받아보세요. <strong>약 1분</strong> 소요됩니다.</p>
+    <button class="btn btn-primary btn-full" onclick="goStep(1)">시작하기 →</button>
+  </div>
+
+  <!-- ── SCREEN: QUESTION (template) ─────────────── -->
+  <div id="screen-question" class="hidden">
+    <div class="step-counter" id="stepCounter">질문 1 / 5</div>
+    <h3 id="questionText"></h3>
+    <div class="options" id="optionsWrap"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()">← 이전</button>
+      <button class="btn btn-primary" id="btnNext" onclick="nextStep()" disabled>다음 →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: INFO ──────────────────────────────── -->
+  <div id="screen-info" class="hidden">
+    <div class="step-counter">참여자 정보</div>
+    <h3>연락처를 입력해 주세요</h3>
+    <div class="info-notice">
+      <div class="notice-title">개인정보 수집 및 이용 동의</div>
+      <div class="notice-row"><span>수집 항목</span><span>소속, 이름, 연락처, 문의사항</span></div>
+      <div class="notice-row"><span>이용 목적</span><span>설문 진행</span></div>
+      <div class="notice-row"><span>보유 기간</span><span class="blue">설문 종료 후 2주간 보관</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+      <input id="fieldOrg" type="text" placeholder="소속 기관 (예: ○○교육청 정보팀)" oninput="checkInfo()"
+        style="background:#0b1929;border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s;"
+        onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='var(--border)'">
+      <input id="fieldName" type="text" placeholder="이름" oninput="checkInfo()"
+        style="background:#0b1929;border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s;"
+        onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='var(--border)'">
+      <input id="fieldContact" type="text" placeholder="연락처 (이메일 또는 전화번호)" oninput="checkInfo()"
+        style="background:#0b1929;border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border-color .15s;"
+        onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='var(--border)'">
+      <textarea id="fieldNote" rows="2" placeholder="문의사항 (선택)" oninput="checkInfo()"
+        style="background:#0b1929;border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit;resize:none;line-height:1.6;transition:border-color .15s;margin-bottom:0;"
+        onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prevStep()">← 이전</button>
+      <button class="btn btn-primary" id="btnSubmit" onclick="submitSurvey()" disabled>동의하고 제출 →</button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: SENDING ──────────────────────────── -->
+  <div id="screen-sending" class="hidden">
+    <div class="sending">
+      <div class="spinner"></div>
+      <div>제출 중입니다...</div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: RESULT ───────────────────────────── -->
+  <div id="screen-result" class="hidden fade-in">
+    <div class="result-icon">✅</div>
+    <div class="result-title">제출이 완료되었습니다</div>
+    <div class="result-sub">참여해 주셔서 감사합니다.</div>
+
+    <div class="verdict-box" id="verdictBox">
+      <div class="verdict-tag">판정 결과</div>
+      <div class="verdict-header">
+        <div class="verdict-badge" id="verdictBadge">A</div>
+        <div class="verdict-label" id="verdictLabel"></div>
+      </div>
+      <div class="verdict-desc" id="verdictDesc"></div>
+    </div>
+
+    <div class="resources">
+      <div class="resources-title">관련 자료</div>
+      <a class="resource-link" href="https://www.knowwheresoft.com/pages/solution-comply.html" target="_blank">
+        <span class="resource-icon">📄</span>
+        <div class="resource-info">
+          <div class="resource-name">솔루션 소개자료</div>
+          <div class="resource-url">컴플리사이트 상세 소개</div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-link" href="https://www.knowwheresoft.com" target="_blank">
+        <span class="resource-icon">🌐</span>
+        <div class="resource-info">
+          <div class="resource-name">노웨어소프트 홈페이지</div>
+          <div class="resource-url">www.knowwheresoft.com</div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+      <a class="resource-link" href="mailto:contact@knowwheresoft.com">
+        <span class="resource-icon">✉️</span>
+        <div class="resource-info">
+          <div class="resource-name">도입 문의하기</div>
+          <div class="resource-url">contact@knowwheresoft.com</div>
+        </div>
+        <span class="resource-arrow">→</span>
+      </a>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ★ 여기에 Apps Script 배포 URL을 붙여넣으세요
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyizcgbdAK7aErZ5j9wxepZrd7raxVmC-xwhX6r57MQzQD-gLhFtsjRnKMupFXFle4V/exec";
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const QUESTIONS = [
+  { id:1, text:"우리 기관은 공공기관 또는 행정기관에 해당하나요?",             options:["예","아니오","잘 모름"] },
+  { id:2, text:"우리 기관은 정보시스템을 직접 운영하거나 위탁 운영하고 있나요?", options:["예","아니오","잘 모름"] },
+  { id:3, text:"우리 기관은 1·2등급에 해당하는 중요 정보시스템을 보유하고 있나요?", options:["예","아니오","잘 모름"] },
+  { id:4, text:"현재 점검 업무를 사람이 직접 확인하거나 수기로 기록하는 방식에 의존하고 있나요?", options:["예","아니오","잘 모름"] },
+  { id:5, text:"외부감사나 상급기관 점검에 대비가 필요하다고 느끼시나요?",      options:["예","아니오"] },
+];
+
+let currentStep = 0; // 0=intro, 1~5=questions, 6=info
+const answers = {};
+const TOTAL = QUESTIONS.length; // 5
+
+function getVerdict() {
+  const q1=answers[1], q2=answers[2], q3=answers[3];
+  if (q1==="예" && q2==="예" && q3==="예")
+    return { grade:"A", color:"#ef4444", label:"적용 가능성 높음",
+      desc:"기관이 공공기관 또는 행정기관에 해당하고, 중요 정보시스템을 운영 중인 경우입니다. 예방점검체계 의무 적용 대상일 가능성이 높습니다." };
+  if (q1==="예" || q2==="예")
+    return { grade:"B", color:"#f59e0b", label:"추가 확인 필요",
+      desc:"기관이 대상일 수 있지만, 시스템 중요도나 운영 범위를 조금 더 확인해야 하는 경우입니다." };
+  return { grade:"C", color:"#3b82f6", label:"운영 보완 필요",
+    desc:"의무 적용 여부와 별개로, 점검·보고·감사 대응 체계를 보완할 필요가 있는 경우입니다." };
+}
+
+function showScreen(id) {
+  ["intro","question","info","sending","result"].forEach(s => {
+    const el = document.getElementById("screen-"+s);
+    el.classList.add("hidden");
+    el.classList.remove("fade-in");
+  });
+  const target = document.getElementById("screen-"+id);
+  target.classList.remove("hidden");
+  setTimeout(()=>target.classList.add("fade-in"), 10);
+}
+
+function updateProgress() {
+  const wrap = document.getElementById("progressWrap");
+  if (currentStep === 0) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  const pct = Math.round((currentStep / (TOTAL + 1)) * 100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+}
+
+function renderQuestion(step) {
+  const q = QUESTIONS[step - 1];
+  document.getElementById("stepCounter").textContent = `질문 ${step} / ${TOTAL}`;
+  document.getElementById("questionText").textContent = q.text;
+
+  const wrap = document.getElementById("optionsWrap");
+  wrap.innerHTML = "";
+  q.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "option" + (answers[step] === opt ? " selected" : "");
+    btn.innerHTML = `<span class="radio-dot"><span class="radio-inner"></span></span>${opt}`;
+    btn.onclick = () => selectAnswer(step, opt);
+    wrap.appendChild(btn);
+  });
+
+  document.getElementById("btnPrev").style.display = step === 1 ? "none" : "";
+  document.getElementById("btnNext").disabled = !answers[step];
+  document.getElementById("btnNext").textContent = step === TOTAL ? "다음 →" : "다음 →";
+}
+
+function selectAnswer(step, val) {
+  answers[step] = val;
+  renderQuestion(step);
+}
+
+function goStep(step) {
+  currentStep = step;
+  updateProgress();
+  if (step === 0) { showScreen("intro"); return; }
+  if (step >= 1 && step <= TOTAL) { showScreen("question"); renderQuestion(step); return; }
+  if (step === TOTAL + 1) { showScreen("info"); checkInfo(); return; }
+}
+
+function nextStep() {
+  if (currentStep <= TOTAL) goStep(currentStep + 1);
+}
+function prevStep() {
+  if (currentStep > 1) goStep(currentStep - 1);
+  else if (currentStep === 1) goStep(0);
+  else if (currentStep === TOTAL + 1) goStep(TOTAL);
+}
+
+function checkInfo() {
+  const org  = document.getElementById("fieldOrg").value.trim();
+  const name = document.getElementById("fieldName").value.trim();
+  const contact = document.getElementById("fieldContact").value.trim();
+  document.getElementById("btnSubmit").disabled = !(org && name && contact);
+}
+
+async function submitSurvey() {
+  showScreen("sending");
+  document.getElementById("progressWrap").classList.add("hidden");
+
+  const org     = document.getElementById("fieldOrg").value.trim();
+  const name    = document.getElementById("fieldName").value.trim();
+  const contact = document.getElementById("fieldContact").value.trim();
+  const note    = document.getElementById("fieldNote").value.trim();
+  const verdict = getVerdict();
+
+  const payload = {
+    submittedAt: new Date().toLocaleString("ko-KR"),
+    org, name, contact, note,
+    q1: answers[1]||"", q2: answers[2]||"", q3: answers[3]||"",
+    q4: answers[4]||"", q5: answers[5]||"",
+    verdict: `${verdict.grade}등급 - ${verdict.label}`,
+  };
+
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch(e) {
+    console.warn("전송 실패(무시):", e);
+  }
+
+  // Show result regardless of network
+  showResult(verdict);
+}
+
+function showResult(verdict) {
+  document.getElementById("verdictBadge").textContent = verdict.grade;
+  document.getElementById("verdictBadge").style.background = verdict.color;
+  document.getElementById("verdictLabel").textContent = verdict.label;
+  document.getElementById("verdictLabel").style.color = verdict.color;
+  document.getElementById("verdictDesc").textContent = verdict.desc;
+  document.getElementById("verdictBox").style.borderColor = verdict.color + "44";
+  showScreen("result");
+}
+</script>
+</body>
+</html>
