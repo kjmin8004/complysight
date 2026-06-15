@@ -242,7 +242,7 @@
       <div class="progress-meta">
         <span class="progress-label">진행도</span>
         <span class="progress-pct" id="progressPct">0%</span>
-      </div>
+      </div>정보시스템 예방점검 진단
       <div class="progress-bar">
         <div class="progress-fill" id="progressFill" style="width:0%"></div>
       </div>
@@ -251,8 +251,8 @@
     <!-- INTRO -->
     <div id="screen-intro" class="fade-in">
       <div class="badge">정보시스템 예방점검체계 자동화</div>
-      <h2>우리 기관도 예방점검체계<br>적용 대상일까요?</h2>
-      <p class="desc">※ 추첨을 통해 스타벅스 상품권을 보내 드립니다.<br>맞춤 솔루션 정보를 받아보세요. <strong>약 1분</strong> 소요됩니다.</p>
+      <h2>우리 기관의<br>예방점검체계 대응 수준을 확인해 보세요.</h2>
+      <p class="desc">※ 소정의 선물을 드립니다.<br>맞춤 솔루션 정보를 받아보세요. <strong>약 1분</strong> 소요됩니다.</p>
       <button class="btn btn-primary btn-full" onclick="goStep(1)">진단 시작하기 →</button>
     </div>
 
@@ -270,7 +270,7 @@
     <!-- INFO -->
     <div id="screen-info" class="hidden">
       <div class="step-counter">참여자 정보</div>
-      <h3>설문에 참여해주셔셔 감사합니다. <br>추첨을 통해 스타벅스 상품권을 보내드립니다.</h3>
+      <h3>설문에 참여해주셔셔 감사합니다. <br>참여내용을 보여주시면 소정의 선물을 드립니다..</h3>
       <div class="info-notice">
         <div class="notice-title">개인정보 수집 및 이용 동의</div>
         <div class="notice-row"><span>수집 항목</span><span>소속, 이름, 연락처, 문의사항</span></div>
@@ -361,7 +361,7 @@ document.getElementById("bannerImg").src = "data:image/png;base64," + BANNER_B64
 const QUESTIONS = [
   { id:1, text:"우리 기관은 공공기관 또는 행정기관에 해당하나요?",                options:["예","아니오","잘 모름"] },
   { id:2, text:"우리 기관은 정보시스템을 직접 운영하거나 위탁 운영하고 있나요?",  options:["예","아니오","잘 모름"] },
-  { id:3, text:"우리 기관은 1·2등급에 해당하는 중요 정보시스템을 보유하고 있나요?", options:["예","아니오","잘 모름"] },
+  { id:3, text:"우리 기관은 1-4등급에 해당하는 중요 정보시스템을 보유하고 있나요?", options:["예","아니오","잘 모름"] },
   { id:4, text:"현재 점검 업무를 사람이 직접 확인하거나 수기로 기록하는 방식에 의존하고 있나요?", options:["예","아니오","잘 모름"] },
   { id:5, text:"외부감사나 상급기관 점검에 대비가 필요하다고 느끼시나요?",           options:["예","아니오"] },
 ];
